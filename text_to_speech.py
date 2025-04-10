@@ -1,11 +1,15 @@
 # text_to_speech.py
 import requests
 import config
+from pydub import AudioSegment
+import os
+
+
 def text_to_speech(text: str, user_id: int, message_id: int) -> str:
     file_name = f"response_{user_id}_{message_id}.mp3"
 
     url = config.TTS_API_URL
-    token = config.TTS_API_TOKEN
+    token = config.API_TOKEN
     speaker_id = config.SPEAKER_ID
 
     payload = f"token={token}&text={text}&speaker_id={speaker_id}"
@@ -22,18 +26,32 @@ def text_to_speech(text: str, user_id: int, message_id: int) -> str:
 
 def speech_to_text(audio_path: str) -> str:
     url = config.STT_API_URL
-    token = config.TTS_API_TOKEN
+    token = config.API_TOKEN
 
     payload = {
         "token": token
     }
     files = [
-        ('audio', (audio_path, open(audio_path, 'rb'), 'audio/wav'))
+        ('audio', (audio_path, open(audio_path, 'rb'), 'audio/ogg'))
     ]
 
     response = requests.post(url, data=payload, files=files)
 
     if response.status_code == 200:
-        return response.json().get("text", "Matn topilmadi.")
+        return response.json()['message']['result']['text']
     else:
         raise Exception(f"Xatolik: {response.status_code}, {response.text}")
+
+
+
+
+
+def convert_ogg_to_wav(ogg_path, wav_path):
+    try:
+        audio = AudioSegment.from_file(ogg_path, format="ogg")
+        audio.export(wav_path, format="wav")
+        print("Konvertatsiya bajarildi:", wav_path)
+        return wav_path
+    except Exception as e:
+        print("❌ Ovozli xabarda xatolik:", e)
+        return None
